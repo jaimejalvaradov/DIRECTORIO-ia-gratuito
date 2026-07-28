@@ -18,151 +18,76 @@ let listaIAs = [
   { nombre: "Suno",               uso: "Crear canciones con IA",           categoria: "Audio",  url: "https://suno.com",                     precioPremium: 10 }
 ];
 
-// Arreglo separado: acá se van guardando los índices que el usuario va seleccionando
+// Arreglo con los índices seleccionados (nuestro "carrito")
 let seleccion = [];
 
-// Muestra el menú principal
-function mostrarMenu() {
-  let texto = "========= DIRECTORIO DE IAs =========\n";
+// Dibuja la lista de IAs con casilleros, uno por uno, en la página
+function renderizarLista() {
+  let contenedor = document.getElementById("lista");
   for (let i = 0; i < listaIAs.length; i++) {
-    texto += `${i + 1}. ${listaIAs[i].nombre} (${listaIAs[i].categoria}) - ${listaIAs[i].uso}\n`;
+    let ia = listaIAs[i];
+    let div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <input type="checkbox" onchange="cambiarSeleccion(${i}, this.checked)">
+      <div class="info">
+        <div class="nombre">${ia.nombre}</div>
+        <div class="detalle">${ia.uso} · ${ia.categoria}</div>
+      </div>
+      <div class="precio">$${ia.precioPremium}/mes</div>
+    `;
+    contenedor.appendChild(div);
   }
-  texto += "======================================\n";
-  texto += "A. Agregar IA a la selección\n";
-  texto += "Q. Quitar IA de la selección\n";
-  texto += "V. Ver selección actual\n";
-  texto += "O. Abrir todas las seleccionadas\n";
-  texto += "0. Filtrar por categoría\n";
-  texto += "S. Salir\n";
-  texto += "Elegí una opción:";
-  return texto;
 }
 
-// Agrega un índice al arreglo de selección (evita duplicados)
-function agregarASeleccion(indice) {
-  if (seleccion.includes(indice)) {
-    console.log(`⚠️ "${listaIAs[indice].nombre}" ya estaba en tu selección.`);
-    return;
+// Se ejecuta cada vez que el usuario marca o desmarca un casillero
+function cambiarSeleccion(indice, marcado) {
+  if (marcado) {
+    seleccion.push(indice);
+    console.log(`✅ Agregada: ${listaIAs[indice].nombre}`);
+  } else {
+    let posicion = seleccion.indexOf(indice);
+    seleccion.splice(posicion, 1);
+    console.log(`🗑️ Quitada: ${listaIAs[indice].nombre}`);
   }
-  seleccion.push(indice);
-  console.log(`✅ "${listaIAs[indice].nombre}" agregada a la selección.`);
+  actualizarResumen();
 }
 
-// Quita un índice del arreglo de selección
-function quitarDeSeleccion(indice) {
-  let posicion = seleccion.indexOf(indice);
-  if (posicion === -1) {
-    console.log(`❌ "${listaIAs[indice].nombre}" no estaba en tu selección.`);
-    return;
-  }
-  seleccion.splice(posicion, 1);
-  console.log(`🗑️ "${listaIAs[indice].nombre}" fue quitada de la selección.`);
-}
-
-// Muestra la selección actual y el total acumulado (sumatoria)
-function mostrarSeleccion() {
-  if (seleccion.length === 0) {
-    console.log("🛒 Tu selección está vacía.");
-    return;
-  }
-  console.log("🛒 Selección actual:");
+// Recalcula la suma y actualiza el texto en pantalla
+function actualizarResumen() {
+  let nombres = [];
   let total = 0;
+
   for (let i = 0; i < seleccion.length; i++) {
     let ia = listaIAs[seleccion[i]];
-    console.log(`   - ${ia.nombre} (premium: $${ia.precioPremium}/mes)`);
+    nombres.push(ia.nombre);
     total += ia.precioPremium;
   }
-  console.log(`💰 Costo total premium estimado: $${total.toFixed(2)}/mes\n`);
+
+  let textoSeleccion = seleccion.length === 0
+    ? "Ninguna IA seleccionada"
+    : nombres.join(" - ");
+
+  document.getElementById("seleccionadas").textContent = textoSeleccion;
+  document.getElementById("total").textContent = `Total premium: $${total.toFixed(2)}/mes`;
+
+  console.log(`💰 Total actual: $${total.toFixed(2)}/mes`);
 }
 
-// Abre todas las IAs seleccionadas en pestañas nuevas y muestra el resumen
+// Abre todas las pestañas seleccionadas
 function abrirSeleccionadas() {
   if (seleccion.length === 0) {
-    console.log("⚠️ No hay ninguna IA seleccionada todavía. Usá la opción A para agregar.");
+    alert("Marcá al menos una IA antes de abrir.");
     return;
   }
 
-  let total = 0;
-  let nombres = [];
-
   for (let i = 0; i < seleccion.length; i++) {
     let ia = listaIAs[seleccion[i]];
-    let ventana = window.open(ia.url, "_blank");
-    if (!ventana) {
-      console.log(`⚠️ Se bloqueó la ventana de ${ia.nombre}. Link: ${ia.url}`);
-    }
-    total += ia.precioPremium;
-    nombres.push(ia.nombre);
+    window.open(ia.url, "_blank");
   }
 
-  console.log(`🚀 Se abrieron ${seleccion.length} pestañas: ${nombres.join(", ")}`);
-  console.log(`💰 Costo total premium estimado si las suscribieras todas: $${total.toFixed(2)}/mes\n`);
-
-  seleccion = []; // se vacía la selección después de abrirlas
+  console.log(`🚀 Se abrieron ${seleccion.length} pestañas.`);
 }
 
-// Filtra la lista por categoría
-function filtrarPorCategoria(categoria) {
-  console.log(`🔎 IAs en la categoría "${categoria}":`);
-  let encontrados = 0;
-  for (let i = 0; i < listaIAs.length; i++) {
-    if (listaIAs[i].categoria.toLowerCase() === categoria.toLowerCase()) {
-      console.log(`- ${listaIAs[i].nombre}: ${listaIAs[i].uso}`);
-      encontrados++;
-    }
-  }
-  if (encontrados === 0) {
-    console.log("No se encontraron IAs en esa categoría.");
-  }
-}
-
-// Función principal
-function iniciarPrograma() {
-  console.log("🤖 Bienvenido al Directorio de IAs Gratuitas");
-
-  let opcion = "";
-  while (opcion.toUpperCase() !== "S") {
-    opcion = prompt(mostrarMenu());
-
-    if (opcion === null) {
-      console.log("👋 Programa cancelado por el usuario.");
-      break;
-    }
-
-    opcion = opcion.toUpperCase();
-
-    if (opcion === "S") {
-      console.log("👋 ¡Hasta luego!");
-      break;
-    }
-
-    if (opcion === "A" || opcion === "Q") {
-      let numero = Number(prompt("¿Número de la IA?"));
-      if (numero >= 1 && numero <= listaIAs.length) {
-        if (opcion === "A") agregarASeleccion(numero - 1);
-        else quitarDeSeleccion(numero - 1);
-      } else {
-        console.log("⚠️ Número inválido.");
-      }
-      continue;
-    }
-
-    if (opcion === "V") {
-      mostrarSeleccion();
-      continue;
-    }
-
-    if (opcion === "O") {
-      abrirSeleccionadas();
-      continue;
-    }
-
-    if (opcion === "0") {
-      let cat = prompt("¿Qué categoría? (Texto, Imagen, Código, Estudio, Audio)");
-      filtrarPorCategoria(cat);
-      continue;
-    }
-
-    console.log("⚠️ Opción no válida, intentá de nuevo.");
-  }
-}
+// Arranca apenas carga la página
+renderizarLista();
